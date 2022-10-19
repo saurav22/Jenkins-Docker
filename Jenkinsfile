@@ -1,23 +1,10 @@
 pipeline {
-    agent any
-    triggers { pollSCM('* * * * *') }
-    options {
-        buildDiscarder(logRotator(numToKeepStr: '5', artifactNumToKeepStr: '5'))
-        timestamps()
-    }
-    environment {
-        //TODO # 1 --> once you sign up for Docker hub, use that user_id here
-        registry = "valikkr/public:${BUILD_NUMBER}"
-        //TODO #2 - update your credentials ID after creating credentials for connecting to Docker Hub
-        registryCredential = 'dockerhub_id'
-        dockerImage = ''
-    }
-    
+    agent any    
     stages {
         stage('Cloning Git') {
             steps {
                 // make link via Pipeline Syntax
-                checkout([$class: 'GitSCM', branches: [[name: '*/*']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/valikkr/jenkinsfile.git']]])       
+                checkout([$class: 'GitSCM', branches: [[name: '*/*']], extensions: [], userRemoteConfigs: [[url: 'https://github.com/Pankajsingh63/Jenkins-Docker.git']]])       
             }
         }
     
@@ -25,7 +12,7 @@ pipeline {
     stage('Building image') {
       steps{
         script {
-            dockerImage = docker.build registry
+            sh 'docker build -t devops-repo/python-app-1.0 .'
         }
       }
     }
@@ -34,29 +21,17 @@ pipeline {
     stage('Upload Image') {
      steps{    
          script {
-            docker.withRegistry( '', registryCredential ) {
-            dockerImage.push()
-            }
+            withCredentials([string(credentialsId: 'pankajsingh63', variable: 'dockerhubpwd')]) {
+            sh 'docker login -u  pankajsingh63 -p ${dockerhubpwd} docker.io '  
+            
+            sh 'docker push pankajsingh63/devops-repo:latest'
+            sh 'docker push devops-repo/python-app-1.0:latest'
+    // some block
+}
         }
       }
     }
     
-     // Stopping Docker containers for cleaner Docker run
-     stage('docker stop container') {
-         steps {
-            sh 'docker ps -f name=mypythonContainer -q | xargs --no-run-if-empty docker container stop'
-            sh 'docker container ls -a -fname=mypythonContainer -q | xargs -r docker container rm'
-         }
-       }
     
-    
-    // Running Docker container, make sure port 8096 is opened in 
-    stage('Docker Run') {
-     steps{
-         script {
-            dockerImage.run("-p 443:5000 --rm --name mypythonContainer")
-         }
-      }
     }
   }
-}
