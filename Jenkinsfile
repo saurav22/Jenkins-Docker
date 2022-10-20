@@ -12,7 +12,7 @@ pipeline {
     stage('Building image') {
       steps{
         script {
-            sh 'docker build -t devops-repo/python-app-1.0 .'
+            sh 'docker build -t pankajsingh63/docker-app .'
         }
       }
     }
@@ -22,16 +22,15 @@ pipeline {
      steps{    
          script {
             withCredentials([string(credentialsId: 'pankajsingh63', variable: 'dockerhubpwd')]) {
-            sh 'docker login -u  pankajsingh63 -p ${dockerhubpwd} docker.io '  
-            
-            sh 'docker push pankajsingh63/devops-repo:latest'
-            sh 'docker push devops-repo/python-app-1.0:latest'
-    // some block
-}
+            // Login   Docker hub and push the image           
+              sh "docker login -u  pankajsingh63 -p ${dockerhubpwd} docker.io " 
+            sh 'docker push pankajsingh63/docker-app'
+			  sh 'docker run -p 80:5000 -d pankajsingh63/docker-app '
+  }			
         }
       }
     }
-    
+
     
     }
   }
